@@ -19,6 +19,10 @@ interface UseLiveMapResult {
   permission: LocationPermissionState
   error: string | null
   cells: HeatmapCell[]
+  // The user's current H3 (res 9) cell, if known — exposed so other
+  // location-aware features (e.g. check-in submission) can reuse it instead
+  // of asking for a second geolocation fix.
+  currentCell: string | null
   requestLocation: () => void
 }
 
@@ -32,6 +36,7 @@ export function useLiveMap(): UseLiveMapResult {
   const [permission, setPermission] = useState<LocationPermissionState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [cells, setCells] = useState<HeatmapCell[]>([])
+  const [currentCell, setCurrentCell] = useState<string | null>(null)
 
   const watchIdRef = useRef<number | null>(null)
   const lastPingAtRef = useRef(0)
@@ -60,6 +65,7 @@ export function useLiveMap(): UseLiveMapResult {
       const cell = latLngToCell(position.coords.latitude, position.coords.longitude, H3_RESOLUTION)
       const cellChanged = cell !== centerCellRef.current
       centerCellRef.current = cell
+      if (cellChanged) setCurrentCell(cell)
 
       const token = accessTokenRef.current
       const now = Date.now()
@@ -122,5 +128,5 @@ export function useLiveMap(): UseLiveMapResult {
     if (!accessToken) setCells([])
   }, [accessToken])
 
-  return { permission, error, cells, requestLocation }
+  return { permission, error, cells, currentCell, requestLocation }
 }

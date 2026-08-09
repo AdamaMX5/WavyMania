@@ -9,6 +9,10 @@ import { useLiveMap } from '../geo/useLiveMap'
 import { WaveDetailSheet } from '../components/WaveDetailSheet'
 import { categoryEmoji } from '../types'
 import type { HeatmapCell } from '../geo/geoClient'
+import { QrScanner } from '../checkin/QrScanner'
+import { parseCheckinQr } from '../checkin/qrPayload'
+import * as activationClient from '../checkin/activationClient'
+import { ActivationApiError, type Plausibility } from '../checkin/activationClient'
 
 // Raw tile.openstreetmap.org is fine for local dev; a production deploy should
 // switch to a provider that allows commercial/high-traffic use per OSM's tile
@@ -60,15 +64,95 @@ function cellsToGeoJSON(cells: HeatmapCell[]): FeatureCollection<Polygon, { acti
   }
 }
 
+function checkinSuccessMessage(plausibility: Plausibility): string {
+  switch (plausibility) {
+    case 'match':
+      return 'Check-in erfolgreich! ✅'
+    case 'mismatch':
+      return 'Check-in erfolgreich — dein Standort weicht allerdings vom Ort ab.'
+    default:
+      return 'Check-in erfolgreich.'
+  }
+}
+
+function checkinErrorMessage(err: unknown): string {
+  if (err instanceof ActivationApiError) {
+    switch (err.status) {
+      case 403:
+        return 'Falscher oder abgelaufener Code — bitte scanne den aktuellen QR-Code am Standort.'
+      case 404:
+        return 'Dieser Ort ist gerade nicht aktiv.'
+      case 429:
+        return 'Du kannst hier gerade nicht erneut einchecken (Cooldown aktiv).'
+      default:
+        return err.message
+    }
+  }
+  return err instanceof Error ? err.message : 'Check-in fehlgeschlagen.'
+}
+
+interface CheckinFeedback {
+  type: 'success' | 'error'
+  message: string
+}
+
 export function MapView() {
   const { waves } = useWaves()
   const { accessToken } = useAuth()
-  const { permission, error: geoError, cells, requestLocation } = useLiveMap()
+  const { permission, error: geoError, cells, currentCell, requestLocation } = useLiveMap()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = waves.find((w) => w.id === selectedId) ?? null
+
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scannerKey, setScannerKey] = useState(0)
+  const [submittingCheckin, setSubmittingCheckin] = useState(false)
+  const [checkinFeedback, setCheckinFeedback] = useState<CheckinFeedback | null>(null)
+
+  useEffect(() => {
+    if (!checkinFeedback) return
+    const id = window.setTimeout(() => setCheckinFeedback(null), 6000)
+    return () => window.clearTimeout(id)
+  }, [checkinFeedback])
+
+  function openScanner() {
+    setCheckinFeedback(null)
+    setScannerKey((k) => k + 1)
+    setScannerOpen(true)
+  }
+
+  async function handleQrDetect(payload: string) {
+    const parsed = parseCheckinQr(payload)
+    if (!parsed) {
+      setCheckinFeedback({ type: 'error', message: 'Das ist kein gültiger Check-in-Code.' })
+      // Remount the scanner so it keeps looking instead of freezing on a
+      // non-matching QR code (e.g. someone scanned a wave-share link).
+      setScannerKey((k) => k + 1)
+      return
+    }
+    if (!accessToken) {
+      setScannerOpen(false)
+      setCheckinFeedback({ type: 'error', message: 'Bitte melde dich an, um einzuchecken.' })
+      return
+    }
+
+    setSubmittingCheckin(true)
+    try {
+      const result = await activationClient.submitCheckin(
+        { locationId: parsed.locationId, code: parsed.code, h3: currentCell ?? undefined },
+        accessToken,
+      )
+      setScannerOpen(false)
+      setCheckinFeedback({ type: 'success', message: checkinSuccessMessage(result.plausibility) })
+    } catch (err) {
+      setScannerOpen(false)
+      setCheckinFeedback({ type: 'error', message: checkinErrorMessage(err) })
+    } finally {
+      setSubmittingCheckin(false)
+    }
+  }
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -187,6 +271,38 @@ export function MapView() {
         <div className="absolute left-3 right-3 top-3 rounded-xl border border-neutral-800 bg-neutral-950/90 p-3 text-xs text-neutral-400 shadow-lg backdrop-blur">
           {geoError}
         </div>
+      )}
+
+      {checkinFeedback && (
+        <div
+          className={`absolute bottom-4 left-3 right-3 rounded-xl border p-3 text-sm shadow-lg backdrop-blur ${
+            checkinFeedback.type === 'success'
+              ? 'border-emerald-800 bg-emerald-950/90 text-emerald-200'
+              : 'border-amber-800 bg-amber-950/90 text-amber-200'
+          }`}
+        >
+          {checkinFeedback.message}
+        </div>
+      )}
+
+      {accessToken && (
+        <button
+          type="button"
+          onClick={openScanner}
+          aria-label="Check-in-QR scannen"
+          className="absolute bottom-4 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-2xl text-neutral-950 shadow-lg"
+        >
+          📷
+        </button>
+      )}
+
+      {scannerOpen && (
+        <QrScanner
+          key={scannerKey}
+          onDetect={handleQrDetect}
+          onClose={() => setScannerOpen(false)}
+          paused={submittingCheckin}
+        />
       )}
 
       {selected && <WaveDetailSheet wave={selected} onClose={() => setSelectedId(null)} />}

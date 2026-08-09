@@ -24,6 +24,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/geo/, ''),
       },
+      // Same rationale as /api/wave above, for ActivationService (see
+      // activationClient.ts). Overridden entirely when
+      // VITE_ACTIVATION_SERVICE_URL is set.
+      '/api/activation': {
+        target: process.env.ACTIVATION_SERVICE_PROXY_TARGET || 'http://localhost:3002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/activation/, ''),
+      },
     },
   },
 })
