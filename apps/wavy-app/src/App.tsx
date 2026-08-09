@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
-import { WavesProvider } from './mock/WavesContext'
+import { WavesProvider } from './waves/WavesContext'
 import { BottomNav } from './components/BottomNav'
 import { WavesView } from './views/WavesView'
 import { MapView } from './views/MapView'
 import { CreateView } from './views/CreateView'
+import { EditView } from './views/EditView'
 import { MarketView } from './views/MarketView'
 import { ProfileView } from './views/ProfileView'
 import { ResetPasswordPage } from './auth/ResetPasswordPage'
@@ -20,6 +21,7 @@ export default function App() {
                 <Route path="/" element={<WavesView />} />
                 <Route path="/karte" element={<MapView />} />
                 <Route path="/erstellen" element={<CreateView />} />
+                <Route path="/waves/:id/bearbeiten" element={<EditView />} />
                 <Route path="/marktplatz" element={<MarketView />} />
                 <Route path="/profil" element={<ProfileView />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />

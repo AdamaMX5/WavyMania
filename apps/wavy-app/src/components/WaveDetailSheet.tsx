@@ -1,5 +1,10 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Wave } from '../types'
-import { useWaves } from '../mock/WavesContext'
+import { categoryEmoji } from '../types'
+import { useWaves } from '../waves/WavesContext'
+import { useAuth } from '../auth/AuthContext'
+import { WaveApiError } from '../waves/waveClient'
 
 const categoryLabel: Record<Wave['category'], string> = {
   event: 'Event',
@@ -21,6 +26,46 @@ function formatWindow(wave: Wave) {
 
 export function WaveDetailSheet({ wave, onClose }: { wave: Wave; onClose: () => void }) {
   const { joinWave, shareWave } = useWaves()
+  const { status, user } = useAuth()
+  const navigate = useNavigate()
+  const [pending, setPending] = useState<'join' | 'share' | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+
+  const isCreator = status === 'authenticated' && user?.id === wave.creatorId
+
+  async function handleJoin() {
+    if (status !== 'authenticated') {
+      setFeedback('Bitte melde dich an, um beizutreten.')
+      return
+    }
+    setPending('join')
+    setFeedback(null)
+    try {
+      await joinWave(wave.id)
+    } catch (err) {
+      setFeedback(err instanceof WaveApiError ? err.message : 'Beitritt fehlgeschlagen.')
+    } finally {
+      setPending(null)
+    }
+  }
+
+  async function handleShare() {
+    if (status !== 'authenticated') {
+      setFeedback('Bitte melde dich an, um zu teilen.')
+      return
+    }
+    setPending('share')
+    setFeedback(null)
+    try {
+      const result = await shareWave(wave.id)
+      setShareUrl(result.shareUrl)
+    } catch (err) {
+      setFeedback(err instanceof WaveApiError ? err.message : 'Teilen fehlgeschlagen.')
+    } finally {
+      setPending(null)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
@@ -34,7 +79,7 @@ export function WaveDetailSheet({ wave, onClose }: { wave: Wave; onClose: () => 
               {categoryLabel[wave.category]}
             </span>
             <h2 className="mt-2 text-xl font-semibold text-neutral-100">
-              {wave.imageEmoji} {wave.title}
+              {categoryEmoji[wave.category]} {wave.title}
             </h2>
           </div>
           <button onClick={onClose} className="text-neutral-500">
@@ -47,20 +92,46 @@ export function WaveDetailSheet({ wave, onClose }: { wave: Wave; onClose: () => 
           <p>🕒 {formatWindow(wave)}</p>
           {wave.maxParticipants ? <p>👥 max. {wave.maxParticipants} Teilnehmer</p> : null}
         </div>
+
+        {feedback && (
+          <p className="mb-3 rounded-lg border border-amber-800 bg-amber-950/40 p-2 text-sm text-amber-200">
+            {feedback}
+          </p>
+        )}
+        {shareUrl && (
+          <button
+            onClick={() => navigator.clipboard?.writeText(shareUrl)}
+            className="mb-3 w-full truncate rounded-lg border border-cyan-800 bg-cyan-950/40 p-2 text-left text-sm text-cyan-200"
+          >
+            🔗 {shareUrl} (antippen zum Kopieren)
+          </button>
+        )}
+
         <div className="flex gap-2">
           <button
-            onClick={() => joinWave(wave.id)}
-            className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 font-medium text-neutral-950"
+            onClick={handleJoin}
+            disabled={pending !== null}
+            className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 font-medium text-neutral-950 disabled:opacity-50"
           >
-            Beitreten ({wave.stats.joins})
+            {pending === 'join' ? 'Beitreten …' : `Beitreten (${wave.stats.joins})`}
           </button>
           <button
-            onClick={() => shareWave(wave.id)}
-            className="flex-1 rounded-lg border border-neutral-700 px-3 py-2 font-medium text-neutral-200"
+            onClick={handleShare}
+            disabled={pending !== null}
+            className="flex-1 rounded-lg border border-neutral-700 px-3 py-2 font-medium text-neutral-200 disabled:opacity-50"
           >
-            Teilen ({wave.stats.shares})
+            {pending === 'share' ? 'Teilen …' : `Teilen (${wave.stats.shares})`}
           </button>
         </div>
+
+        {isCreator && (
+          <button
+            onClick={() => navigate(`/waves/${wave.id}/bearbeiten`)}
+            className="mt-2 w-full rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300"
+          >
+            ✏️ Wave bearbeiten
+          </button>
+        )}
       </div>
     </div>
   )

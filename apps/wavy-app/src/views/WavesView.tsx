@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Wave } from '../types'
-import { useWaves } from '../mock/WavesContext'
+import { categoryEmoji } from '../types'
+import { useWaves } from '../waves/WavesContext'
 import { WaveDetailSheet } from '../components/WaveDetailSheet'
 
 const categoryLabel: Record<Wave['category'], string> = {
@@ -12,19 +13,25 @@ const categoryLabel: Record<Wave['category'], string> = {
   culture: 'Kultur',
 }
 
-function isLiveNow(wave: Wave) {
-  const now = Date.now()
-  return new Date(wave.startsAt).getTime() <= now && now <= new Date(wave.endsAt).getTime()
-}
-
 export function WavesView() {
-  const { waves } = useWaves()
+  const { waves, loading, error } = useWaves()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = waves.find((w) => w.id === selectedId) ?? null
 
   return (
     <div className="p-4">
       <h1 className="mb-4 text-xl font-semibold text-neutral-100">Waves in deiner Nähe</h1>
+
+      {loading && <p className="text-sm text-neutral-500">Waves werden geladen …</p>}
+      {error && (
+        <p className="mb-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+      {!loading && !error && waves.length === 0 && (
+        <p className="text-sm text-neutral-500">Gerade keine live Waves in deiner Nähe.</p>
+      )}
+
       <div className="space-y-3">
         {waves.map((wave) => (
           <button
@@ -33,12 +40,12 @@ export function WavesView() {
             className="w-full rounded-xl bg-neutral-900 p-4 text-left transition hover:bg-neutral-800"
           >
             <div className="mb-1 flex items-center gap-2">
-              <span className="text-2xl">{wave.imageEmoji}</span>
+              <span className="text-2xl">{categoryEmoji[wave.category]}</span>
               <div className="flex-1">
                 <p className="font-medium text-neutral-100">{wave.title}</p>
                 <p className="text-xs text-neutral-500">{wave.venue.name}</p>
               </div>
-              {isLiveNow(wave) && (
+              {wave.state === 'live' && (
                 <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs font-medium text-cyan-400">
                   Live
                 </span>

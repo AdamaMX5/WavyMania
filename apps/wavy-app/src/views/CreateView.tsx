@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { Wave, WaveCategory } from '../types'
-import { useWaves } from '../mock/WavesContext'
+import type { WaveCategory } from '../types'
+import { useWaves } from '../waves/WavesContext'
+import { useAuth } from '../auth/AuthContext'
+import { WaveApiError } from '../waves/waveClient'
+import { LoginForm } from '../auth/LoginForm'
 
 const categories: { value: WaveCategory; label: string }[] = [
   { value: 'event', label: 'Event' },
@@ -12,18 +15,16 @@ const categories: { value: WaveCategory; label: string }[] = [
   { value: 'culture', label: 'Kultur' },
 ]
 
-const emojiOptions = ['🎉', '🎸', '🍢', '🖥️', '🌳', '📣', '☕', '⚽', '🎨', '🐾']
-
 // Default Berlin coordinates — used if the browser denies/lacks geolocation.
 const FALLBACK_LOCATION = { lat: 52.52, lng: 13.405 }
 
 export function CreateView() {
-  const { addWave } = useWaves()
+  const { status } = useAuth()
+  const { createAndPublishWave } = useWaves()
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [emoji, setEmoji] = useState(emojiOptions[0])
   const [category, setCategory] = useState<WaveCategory>('event')
   const [timing, setTiming] = useState<'now' | 'scheduled'>('now')
   const [scheduledAt, setScheduledAt] = useState('')
@@ -32,6 +33,8 @@ export function CreateView() {
   const [maxParticipants, setMaxParticipants] = useState('')
   const [locating, setLocating] = useState(false)
   const [upsellNote, setUpsellNote] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -52,8 +55,9 @@ export function CreateView() {
     )
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
     const venue = { name: venueName, ...(location ?? FALLBACK_LOCATION) }
     const now = Date.now()
@@ -63,22 +67,34 @@ export function CreateView() {
         ? new Date(now + 4 * 60 * 60 * 1000).toISOString()
         : new Date(new Date(scheduledAt).getTime() + 4 * 60 * 60 * 1000).toISOString()
 
-    const wave: Wave = {
-      id: `wave-${crypto.randomUUID()}`,
-      title,
-      description,
-      category,
-      type: timing === 'now' ? 'adhoc' : 'scheduled',
-      venue,
-      startsAt,
-      endsAt,
-      maxParticipants: maxParticipants ? Number(maxParticipants) : undefined,
-      imageEmoji: emoji,
-      stats: { joins: 0, shares: 0, contributions: 0, checkins: 0 },
+    setSubmitting(true)
+    try {
+      await createAndPublishWave({
+        title,
+        description,
+        category,
+        type: timing === 'now' ? 'adhoc' : 'scheduled',
+        venue,
+        startsAt,
+        endsAt,
+        maxParticipants: maxParticipants ? Number(maxParticipants) : undefined,
+      })
+      navigate('/')
+    } catch (err) {
+      setFormError(err instanceof WaveApiError ? err.message : 'Wave konnte nicht erstellt werden.')
+    } finally {
+      setSubmitting(false)
     }
+  }
 
-    addWave(wave)
-    navigate('/')
+  if (status !== 'authenticated') {
+    return (
+      <div className="p-4">
+        <h1 className="mb-4 text-xl font-semibold text-neutral-100">Wave erstellen</h1>
+        <p className="mb-4 text-sm text-neutral-400">Melde dich an, um eine Wave zu erstellen.</p>
+        <LoginForm />
+      </div>
+    )
   }
 
   return (
@@ -102,6 +118,12 @@ export function CreateView() {
         )}
       </div>
 
+      {formError && (
+        <p className="mb-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+          {formError}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm text-neutral-400">Titel</label>
@@ -122,24 +144,6 @@ export function CreateView() {
             onChange={(e) => setDescription(e.target.value)}
             className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-cyan-500"
           />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm text-neutral-400">Bild (Platzhalter)</label>
-          <div className="flex flex-wrap gap-2">
-            {emojiOptions.map((opt) => (
-              <button
-                type="button"
-                key={opt}
-                onClick={() => setEmoji(opt)}
-                className={`rounded-lg border px-3 py-2 text-xl ${
-                  emoji === opt ? 'border-cyan-500 bg-neutral-800' : 'border-neutral-700'
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div>
@@ -222,9 +226,10 @@ export function CreateView() {
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-cyan-500 px-3 py-2 font-medium text-neutral-950"
+          disabled={submitting}
+          className="w-full rounded-lg bg-cyan-500 px-3 py-2 font-medium text-neutral-950 disabled:opacity-50"
         >
-          Wave veröffentlichen
+          {submitting ? 'Wird veröffentlicht …' : 'Wave veröffentlichen'}
         </button>
       </form>
     </div>

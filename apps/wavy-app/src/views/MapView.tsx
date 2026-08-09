@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { useWaves } from '../mock/WavesContext'
+import { useWaves } from '../waves/WavesContext'
 import { WaveDetailSheet } from '../components/WaveDetailSheet'
+import { categoryEmoji } from '../types'
 
 // Raw tile.openstreetmap.org is fine for local dev; a production deploy should
 // switch to a provider that allows commercial/high-traffic use per OSM's tile
@@ -49,27 +50,29 @@ export function MapView() {
     const map = mapRef.current
     if (!map) return
 
-    const markers = waves.map((wave) => {
-      const el = document.createElement('button')
-      el.textContent = wave.imageEmoji
-      el.style.fontSize = '22px'
-      el.style.lineHeight = '1'
-      el.style.background = 'none'
-      el.style.border = 'none'
-      el.style.cursor = 'pointer'
-      el.onclick = () => setSelectedId(wave.id)
+    const markers = waves
+      .filter((wave) => wave.venue.lat !== undefined && wave.venue.lng !== undefined)
+      .map((wave) => {
+        const el = document.createElement('button')
+        el.textContent = categoryEmoji[wave.category]
+        el.style.fontSize = '22px'
+        el.style.lineHeight = '1'
+        el.style.background = 'none'
+        el.style.border = 'none'
+        el.style.cursor = 'pointer'
+        el.onclick = () => setSelectedId(wave.id)
 
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([wave.venue.lng, wave.venue.lat])
-        .addTo(map)
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([wave.venue.lng!, wave.venue.lat!])
+          .addTo(map)
 
-      // MapLibre's Marker sets its own generic aria-label on the element when
-      // it's added to the map, overwriting any label set beforehand — so it
-      // has to be (re-)applied after addTo() to keep it accessible.
-      el.setAttribute('aria-label', wave.title)
+        // MapLibre's Marker sets its own generic aria-label on the element when
+        // it's added to the map, overwriting any label set beforehand — so it
+        // has to be (re-)applied after addTo() to keep it accessible.
+        el.setAttribute('aria-label', wave.title)
 
-      return marker
-    })
+        return marker
+      })
 
     return () => markers.forEach((m) => m.remove())
   }, [waves])
