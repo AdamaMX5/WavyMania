@@ -17,6 +17,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/wave/, ''),
       },
+      // Same rationale as /api/wave above, for GeoService (see geoClient.ts).
+      // Overridden entirely when VITE_GEO_SERVICE_URL is set.
+      '/api/geo': {
+        target: process.env.GEO_SERVICE_PROXY_TARGET || 'http://localhost:3001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/geo/, ''),
+      },
     },
   },
 })
