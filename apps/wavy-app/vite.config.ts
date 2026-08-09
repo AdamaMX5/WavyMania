@@ -32,6 +32,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/activation/, ''),
       },
+      // Same rationale as /api/wave above, for MarketService (see
+      // marketClient.ts). Overridden entirely when VITE_MARKET_SERVICE_URL is
+      // set.
+      '/api/market': {
+        target: process.env.MARKET_SERVICE_PROXY_TARGET || 'http://localhost:3003',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/market/, ''),
+      },
     },
   },
 })

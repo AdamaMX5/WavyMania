@@ -1,12 +1,25 @@
+import type { OrderState } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import { LoginForm } from '../auth/LoginForm'
 import { useAvatar } from '../avatar/AvatarContext'
 import { AvatarBadge } from '../components/AvatarBadge'
 import { SettingsMenu } from '../components/SettingsMenu'
+import { useMarket } from '../market/MarketContext'
+import { formatPrice } from '../lib/format'
+
+const orderStateLabel: Record<OrderState, string> = {
+  pendingPayment: 'Zahlung ausstehend',
+  paid: 'Bezahlt',
+  shipped: 'Versendet',
+  delivered: 'Zugestellt',
+  cancelled: 'Storniert',
+  refunded: 'Erstattet',
+}
 
 export function ProfileView() {
   const auth = useAuth()
   const { avatar } = useAvatar()
+  const { products, myOrders, ordersLoading } = useMarket()
 
   if (auth.status === 'anon') {
     return (
@@ -48,9 +61,32 @@ export function ProfileView() {
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
           Meine Käufe
         </h2>
-        <div className="rounded-xl bg-neutral-900 p-4 text-sm text-neutral-500">
-          Noch keine Käufe — Bestellungen aus dem Marktplatz erscheinen hier.
-        </div>
+        {ordersLoading && <p className="text-sm text-neutral-500">Lädt …</p>}
+        {!ordersLoading && myOrders.length === 0 && (
+          <div className="rounded-xl bg-neutral-900 p-4 text-sm text-neutral-500">
+            Noch keine Käufe — Bestellungen aus dem Marktplatz erscheinen hier.
+          </div>
+        )}
+        {!ordersLoading && myOrders.length > 0 && (
+          <div className="space-y-2">
+            {myOrders.map((order) => (
+              <div key={order.id} className="rounded-xl bg-neutral-900 p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-100">
+                    {/* Order has no denormalized product title — resolved best-effort
+                        against the already-loaded catalog rather than an extra request. */}
+                    {products.find((p) => p.id === order.productId)?.title ?? 'Bestellung'}
+                  </span>
+                  {/* Order has no currency field of its own (see MarketService.md) —
+                      the service only supports 'eur' for now, same simplification
+                      Product.currency already relies on. */}
+                  <span className="text-neutral-400">{formatPrice(order.amountCents, 'EUR')}</span>
+                </div>
+                <span className="text-xs text-neutral-500">{orderStateLabel[order.state]}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <button
