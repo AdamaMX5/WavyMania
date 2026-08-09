@@ -1,8 +1,12 @@
 import { useAuth } from '../auth/AuthContext'
 import { LoginForm } from '../auth/LoginForm'
+import { useAvatar } from '../avatar/AvatarContext'
+import { AvatarBadge } from '../components/AvatarBadge'
+import { SettingsMenu } from '../components/SettingsMenu'
 
 export function ProfileView() {
   const auth = useAuth()
+  const { avatar } = useAvatar()
 
   if (auth.status === 'anon') {
     return (
@@ -14,14 +18,15 @@ export function ProfileView() {
 
   return (
     <div className="p-4">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-800 text-2xl">
-          👤
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <AvatarBadge avatar={avatar} />
+          <div>
+            <p className="font-medium text-neutral-100">{auth.user?.email}</p>
+            <p className="text-sm text-neutral-500">Level 1 · 0 XP</p>
+          </div>
         </div>
-        <div>
-          <p className="font-medium text-neutral-100">{auth.user?.email}</p>
-          <p className="text-sm text-neutral-500">Level 1 · 0 XP</p>
-        </div>
+        <SettingsMenu />
       </div>
 
       {auth.verifyEmailPending && (

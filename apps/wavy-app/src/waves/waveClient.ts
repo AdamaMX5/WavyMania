@@ -80,7 +80,12 @@ export function listWaves(
 }
 
 export function getWave(id: string, accessToken?: string) {
-  return request<Wave>(`/waves/${id}`, { accessToken })
+  // encodeURIComponent: id can originate from other services' data (e.g.
+  // AvatarContext.ts passes a waveId read from an ActivationService
+  // check-in) — defense-in-depth against a stray "/" or query-string
+  // character reshaping the request path, matching MarketService's
+  // convention for IDs sourced the same way.
+  return request<Wave>(`/waves/${encodeURIComponent(id)}`, { accessToken })
 }
 
 export function createWave(data: WaveCreateInput, accessToken: string) {

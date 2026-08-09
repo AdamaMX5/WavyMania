@@ -53,3 +53,23 @@ export interface Product {
   imageEmoji: string
   waveId?: string
 }
+
+export type AvatarSlot = 'head' | 'outfit' | 'badge'
+
+// Catalog entries are static/client-side (no backend "item" concept exists
+// yet) — only the per-user equip/unlock state is persisted, as an
+// ObjectService document (see ../../.claude/MSArchitecture/ObjectService.md).
+export interface AvatarItem {
+  id: string
+  slot: AvatarSlot
+  emoji: string
+  name: string
+  unlock: 'starter' | 'earned'
+  // Shown on locked items; irrelevant for 'starter' items.
+  earnHint?: string
+}
+
+export interface Avatar {
+  equipped: Partial<Record<AvatarSlot, string>>
+  unlockedItemIds: string[]
+}

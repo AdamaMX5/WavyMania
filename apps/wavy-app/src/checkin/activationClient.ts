@@ -67,3 +67,30 @@ export interface CheckinInput {
 export function submitCheckin(input: CheckinInput, accessToken: string) {
   return request<CheckinResult>('/checkins', { method: 'POST', body: JSON.stringify(input), accessToken })
 }
+
+// `GET /me/checkins` projects away `signature`/`merchantId` (billing data
+// that doesn't belong in the consumer-facing history) but keeps `waveId` —
+// used by useAvatar.ts to derive earned avatar items from real check-ins.
+export interface MyCheckin {
+  id: string
+  locationId: string
+  waveId?: string
+  clientH3?: string
+  plausibility: Plausibility
+  createdAt: string
+}
+
+// Tolerates a bare array too, in case this endpoint predates the
+// `{ items, page, limit, total }` envelope convention used elsewhere.
+export async function myCheckins(accessToken: string, params: { page?: number; limit?: number } = {}) {
+  const query = new URLSearchParams()
+  if (params.page) query.set('page', String(params.page))
+  if (params.limit) query.set('limit', String(params.limit))
+  const qs = query.toString()
+  const body = await request<unknown>(`/me/checkins${qs ? `?${qs}` : ''}`, { accessToken })
+  if (Array.isArray(body)) return body as MyCheckin[]
+  if (body && typeof body === 'object' && Array.isArray((body as { items?: unknown }).items)) {
+    return (body as { items: MyCheckin[] }).items
+  }
+  return []
+}
