@@ -127,6 +127,9 @@ stabil und offensichtlich — genau die Sorte Schnitt, an der Microservices funk
   das vereinfacht auch den Security-Audit-Workflow
 - Zunächst klassisch (Fiat) — **nicht** mit Krypto-Payment anfangen
 
+#### promt zum Programmieren der neuen Services
+ programmiere deinen Service mit deinem AgentTeam. Deine API-Endpunkte aktualisierst du in der Service.md. wenn du fetig bist, pushst du zu git.
+
 ### Reputation: kein eigener Service
 
 Das Reputations-/Level-System wird **nicht** als eigener Service gebaut, sondern als
@@ -178,3 +181,14 @@ Profile akkumulieren XP/Badges. Ein eigener Service lohnt erst, wenn die Regeln 
   Anwesenheitsverifikation** — dort zuerst einen Prototyp bauen
 - Nächste mögliche Schritte: API-Verträge für WaveService und ActivationService skizzieren
   oder eine `WaveService.md` im Stil der MSArchitecture-Doku anlegen
+
+---
+
+## 8. Ideen für spätere Phasen (noch nicht spezifiziert)
+
+- **Mitfahrgelegenheiten:** Nutzer könnten über die App Fahrten zu Waves/Events organisieren
+  und teilen (z. B. „Fahrt zu Wave X, noch 2 Plätze frei"). Passt konzeptionell zu „digitale
+  Energie → physische Treffen" und würde die Anreise-Hürde zu Waves senken. Einordnung noch
+  offen: eigener Service vs. Modul im WaveService (Fahrt als Sub-Objekt einer Wave) vs.
+  generischer ObjectService-Prototyp für den MVP. Noch nicht in den Phasenplan (Abschnitt 5)
+  eingeordnet — erst grob skizzieren, wenn Phase 1 (Wave/Geo/Activation) steht.
