@@ -40,6 +40,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/market/, ''),
       },
+      // Same rationale as /api/wave above, for TicketService (see
+      // ticketClient.ts). Overridden entirely when VITE_TICKET_SERVICE_URL is
+      // set.
+      '/api/ticket': {
+        target: process.env.TICKET_SERVICE_PROXY_TARGET || 'http://localhost:3004',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ticket/, ''),
+      },
     },
   },
 })

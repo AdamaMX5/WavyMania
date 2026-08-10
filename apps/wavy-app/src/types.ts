@@ -123,6 +123,39 @@ export function productEmoji(id: string): string {
   return PRODUCT_EMOJIS[hash % PRODUCT_EMOJIS.length]
 }
 
+export type TicketState = 'reserved' | 'paid' | 'cancelled' | 'checkedIn' | 'listed' | 'resold' | 'refunded'
+
+// Mirrors the TicketService `Ticket` document shape (see
+// ../../../TicketService/TicketService.md, src/lib/presenters.js#presentTicket).
+// `qrPayload` is only ever present when `state === 'paid'` — the backend omits
+// the field entirely rather than sending it as null, so its presence alone is
+// the signal, not a separate flag.
+export interface Ticket {
+  id: string
+  eventId: string
+  tierId: string
+  ownerId: string
+  state: TicketState
+  priceCents: number
+  resale: { priceCents: number; listedAt: string } | null
+  reservedUntil: string | null
+  checkedInAt: string | null
+  createdAt: string
+  updatedAt: string
+  qrPayload?: string
+}
+
+// Subset of the TicketService `Event` shape actually used to label a ticket
+// in the UI — fetched lazily per `eventId` since `GET /me/tickets` doesn't
+// denormalize it (same rationale as Order/Product title resolution in
+// MarketService.md).
+export interface TicketEvent {
+  id: string
+  title: string
+  venue: { name: string; address?: string; lat?: number; lng?: number }
+  startsAt: string
+}
+
 export type AvatarSlot = 'head' | 'outfit' | 'badge'
 
 // Catalog entries are static/client-side (no backend "item" concept exists
@@ -141,4 +174,16 @@ export interface AvatarItem {
 export interface Avatar {
   equipped: Partial<Record<AvatarSlot, string>>
   unlockedItemIds: string[]
+}
+
+// Mirrors the ProfileService `GET /reputation/:userId` response shape (see
+// ../../.claude/MSArchitecture/ProfileService.md, "Reputation / Level-System"). Level is
+// derived server-side from `xp`, never stored independently — always trust this shape as a
+// whole rather than recomputing level from xp on the client.
+export interface Reputation {
+  userId: string
+  xp: number
+  level: number
+  xpIntoLevel: number
+  xpForNextLevel: number
 }

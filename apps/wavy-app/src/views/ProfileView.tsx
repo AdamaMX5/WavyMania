@@ -1,10 +1,14 @@
-import type { OrderState } from '../types'
+import { useState } from 'react'
+import type { OrderState, TicketState } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import { LoginForm } from '../auth/LoginForm'
 import { useAvatar } from '../avatar/AvatarContext'
 import { AvatarBadge } from '../components/AvatarBadge'
 import { SettingsMenu } from '../components/SettingsMenu'
 import { useMarket } from '../market/MarketContext'
+import { useReputation } from '../reputation/useReputation'
+import { useTickets } from '../ticket/TicketContext'
+import { TicketQrCode } from '../ticket/TicketQrCode'
 import { formatPrice } from '../lib/format'
 
 const orderStateLabel: Record<OrderState, string> = {
@@ -16,10 +20,38 @@ const orderStateLabel: Record<OrderState, string> = {
   refunded: 'Erstattet',
 }
 
+// Only these states are worth surfacing to the ticket's own owner —
+// `listed`/`resold` (the seller's side of a resale) are shown too since the
+// ticket still belongs in "my tickets" until it's actually sold, but
+// `reserved` (an abandoned checkout mid-flow) is filtered out below rather
+// than confusing the owner with a ticket they never actually paid for.
+const ticketStateLabel: Record<TicketState, string> = {
+  reserved: 'Reservierung ausstehend',
+  paid: 'Gültig',
+  cancelled: 'Storniert',
+  checkedIn: 'Eingecheckt',
+  listed: 'Im Zweitmarkt gelistet',
+  resold: 'Verkauft',
+  refunded: 'Erstattet',
+}
+
 export function ProfileView() {
   const auth = useAuth()
   const { avatar } = useAvatar()
+  const { reputation } = useReputation()
   const { products, myOrders, ordersLoading } = useMarket()
+  const { tickets: allTickets, loading: ticketsLoading, events } = useTickets()
+  // `reserved` is a checkout in flight (or abandoned — the backend's
+  // reservation cron cancels it after RESERVATION_TTL_MIN, see
+  // TicketService.md), never something the owner actually holds yet, so it's
+  // left out of "my tickets" rather than shown as a dead-end pending state.
+  const tickets = allTickets.filter((t) => t.state !== 'reserved')
+  const [openQrTicketId, setOpenQrTicketId] = useState<string | null>(null)
+
+  const progressPercent =
+    reputation && reputation.xpForNextLevel > 0
+      ? Math.min(100, (reputation.xpIntoLevel / reputation.xpForNextLevel) * 100)
+      : 0
 
   if (auth.status === 'anon') {
     return (
@@ -34,9 +66,20 @@ export function ProfileView() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <AvatarBadge avatar={avatar} />
-          <div>
+          <div className="min-w-0">
             <p className="font-medium text-neutral-100">{auth.user?.email}</p>
-            <p className="text-sm text-neutral-500">Level 1 · 0 XP</p>
+            {/* Falls back to the fresh-user default (level 1 / 0 XP) while loading or if
+                the reputation fetch fails — see useReputation.ts — so there's no layout
+                flash and a ProfileService hiccup never blocks the rest of the page. */}
+            <p className="text-sm text-neutral-500">
+              Level {reputation?.level ?? 1} · {reputation?.xp ?? 0} XP
+            </p>
+            <div className="mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-neutral-800">
+              <div
+                className="h-full rounded-full bg-emerald-400"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </div>
         </div>
         <SettingsMenu />
@@ -52,9 +95,44 @@ export function ProfileView() {
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
           Meine Tickets
         </h2>
-        <div className="rounded-xl bg-neutral-900 p-4 text-sm text-neutral-500">
-          Noch keine Tickets — aktive und abgelaufene Tickets erscheinen hier, sobald WavyTickets live ist.
-        </div>
+        {ticketsLoading && <p className="text-sm text-neutral-500">Lädt …</p>}
+        {!ticketsLoading && tickets.length === 0 && (
+          <div className="rounded-xl bg-neutral-900 p-4 text-sm text-neutral-500">
+            Noch keine Tickets — gekaufte Tickets erscheinen hier.
+          </div>
+        )}
+        {!ticketsLoading && tickets.length > 0 && (
+          <div className="space-y-2">
+            {tickets.map((ticket) => {
+              const event = events[ticket.eventId]
+              const qrOpen = openQrTicketId === ticket.id
+              return (
+                <div key={ticket.id} className="rounded-xl bg-neutral-900 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-100">{event?.title ?? 'Ticket'}</span>
+                    <span className="text-neutral-400">{formatPrice(ticket.priceCents, 'EUR')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-500">{ticketStateLabel[ticket.state]}</span>
+                    {ticket.qrPayload && (
+                      <button
+                        onClick={() => setOpenQrTicketId(qrOpen ? null : ticket.id)}
+                        className="text-xs font-medium text-emerald-400"
+                      >
+                        {qrOpen ? 'QR ausblenden' : 'QR anzeigen'}
+                      </button>
+                    )}
+                  </div>
+                  {qrOpen && ticket.qrPayload && (
+                    <div className="mt-3">
+                      <TicketQrCode payload={ticket.qrPayload} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       <section className="mb-6">
