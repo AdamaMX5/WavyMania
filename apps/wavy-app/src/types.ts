@@ -22,6 +22,11 @@ export interface Wave {
   autoPublish: boolean
   maxParticipants: number
   mediaIds: string[]
+  // Optional TicketService event reference — when set, this Wave has ticket access (see
+  // WaveDetailSheet.tsx). Currently only settable via a direct WaveService/TicketService
+  // API call, not through wavy-app's own Creator flow (see frontendPlan.md 5.1 — deliberately
+  // hidden there, reserved for the not-yet-built WavyBusiness frontend).
+  linkedTicketEventId?: string
   stats: {
     joins: number
     shares: number
@@ -145,15 +150,32 @@ export interface Ticket {
   qrPayload?: string
 }
 
-// Subset of the TicketService `Event` shape actually used to label a ticket
-// in the UI — fetched lazily per `eventId` since `GET /me/tickets` doesn't
-// denormalize it (same rationale as Order/Product title resolution in
-// MarketService.md).
+export type TicketEventState = 'draft' | 'published' | 'cancelled' | 'completed'
+
+// Mirrors TicketService's `presentTier` (src/lib/presenters.js) — `available` is
+// server-computed (`max(0, capacity - sold)`), never derived client-side.
+export interface TicketTier {
+  tierId: string
+  name: string
+  priceCents: number
+  capacity: number
+  sold: number
+  available: number
+}
+
+// Subset of the TicketService `Event` shape used both to label an owned ticket in the UI
+// and to drive the purchase flow in WaveDetailSheet.tsx — fetched lazily per `eventId`
+// since `GET /me/tickets` doesn't denormalize it (same rationale as Order/Product title
+// resolution in MarketService.md). `GET /events/:id` never returns a `draft` event (see
+// TicketService's publicEvents.js PUBLIC_STATES) — `state` is still typed to include it
+// for completeness with the backend's full enum, not because the client will ever see one.
 export interface TicketEvent {
   id: string
   title: string
   venue: { name: string; address?: string; lat?: number; lng?: number }
   startsAt: string
+  state: TicketEventState
+  tiers: TicketTier[]
 }
 
 export type AvatarSlot = 'head' | 'outfit' | 'badge'

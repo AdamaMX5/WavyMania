@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Ticket, TicketEvent } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import * as ticketClient from './ticketClient'
+import type { BuyTicketInput, BuyTicketResult } from './ticketClient'
+import { saveClaimToken } from './claimTokenStore'
 
 interface TicketContextValue {
   tickets: Ticket[]
@@ -10,12 +12,17 @@ interface TicketContextValue {
   // (see the effect below). Missing key = not fetched yet; `null` = fetched
   // but the event is no longer publicly visible (draft/deleted).
   events: Record<string, TicketEvent | null>
+  // Works both logged-in (JWT, no email needed) and as a guest (email required, no JWT) —
+  // see BuyTicketInput. Callers (WaveDetailSheet) own the actual checkoutUrl redirect, same
+  // division of labor as MarketContext.buy + ProductDetailSheet.
+  buyTicket: (eventId: string, input: BuyTicketInput) => Promise<BuyTicketResult>
 }
 
 const TicketContext = createContext<TicketContextValue | null>(null)
 
 export function TicketProvider({ children }: { children: ReactNode }) {
   const { status, accessToken } = useAuth()
+  const isAuthenticated = status === 'authenticated'
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState<Record<string, TicketEvent | null>>({})
@@ -74,7 +81,25 @@ export function TicketProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickets])
 
-  const value = useMemo<TicketContextValue>(() => ({ tickets, loading, events }), [tickets, loading, events])
+  const buyTicket = async (eventId: string, input: BuyTicketInput): Promise<BuyTicketResult> => {
+    const result = await ticketClient.buyTicket(eventId, input, isAuthenticated ? accessToken ?? undefined : undefined)
+    // claimToken only ever accompanies a fresh guest signup (see BuyTicketResult) — persist
+    // it on-device now, since the browser is about to leave for Stripe and this response
+    // won't be seen again.
+    if (result.claimToken && input.email) {
+      saveClaimToken(result.ticketId, result.claimToken, input.email)
+    }
+    return result
+  }
+
+  const value = useMemo<TicketContextValue>(
+    // accessToken/isAuthenticated must stay in the dep list even though they're not read
+    // directly in this object literal — buyTicket closes over them, and omitting them would
+    // let a token refresh (accessToken changes, tickets/loading/events don't) leave the
+    // memoized value holding a buyTicket closure over the stale token.
+    () => ({ tickets, loading, events, buyTicket }),
+    [tickets, loading, events, isAuthenticated, accessToken],
+  )
 
   return <TicketContext.Provider value={value}>{children}</TicketContext.Provider>
 }
