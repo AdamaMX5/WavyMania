@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+import { isOrganizer, isMerchant } from './auth/roles'
 import { EventsProvider } from './events/EventsContext'
+import { ProductsProvider } from './market/ProductsContext'
 import { LoginForm } from './auth/LoginForm'
 import { ResetPasswordPage } from './auth/ResetPasswordPage'
 import { NoAccessView } from './components/NoAccessView'
@@ -9,6 +11,20 @@ import { TopNav } from './components/TopNav'
 import { EventListView } from './events/EventListView'
 import { CreateEventView } from './events/CreateEventView'
 import { EventDetailView } from './events/EventDetailView'
+import { ProductListView } from './market/ProductListView'
+import { CreateProductView } from './market/CreateProductView'
+import { ProductDetailView } from './market/ProductDetailView'
+
+// "/" defaults to the Events list — but a merchant-only account (no `organizer`
+// role) has no Events nav link and would just land on a permanently-empty list,
+// so it's redirected straight to its actual home surface instead.
+function Home() {
+  const { user } = useAuth()
+  if (!isOrganizer(user?.roles) && isMerchant(user?.roles)) {
+    return <Navigate to="/produkte" replace />
+  }
+  return <EventListView />
+}
 
 function Gate({ children }: { children: ReactNode }) {
   const { status, user } = useAuth()
@@ -21,8 +37,8 @@ function Gate({ children }: { children: ReactNode }) {
     )
   }
   // Role assignment is admin-only (AuthService.md `/admin/set_roles`) — a
-  // freshly registered account never has `organizer` by itself.
-  if (!user?.roles.includes('organizer')) {
+  // freshly registered account never has `organizer`/`merchant`/`creator` by itself.
+  if (!isOrganizer(user?.roles) && !isMerchant(user?.roles)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <NoAccessView />
@@ -36,28 +52,33 @@ export default function App() {
   return (
     <AuthProvider>
       <EventsProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-neutral-950 text-neutral-100">
-            <Routes>
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route
-                path="*"
-                element={
-                  <Gate>
-                    <TopNav />
-                    <main>
-                      <Routes>
-                        <Route path="/" element={<EventListView />} />
-                        <Route path="/erstellen" element={<CreateEventView />} />
-                        <Route path="/events/:id" element={<EventDetailView />} />
-                      </Routes>
-                    </main>
-                  </Gate>
-                }
-              />
-            </Routes>
-          </div>
-        </BrowserRouter>
+        <ProductsProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-neutral-950 text-neutral-100">
+              <Routes>
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route
+                  path="*"
+                  element={
+                    <Gate>
+                      <TopNav />
+                      <main>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/erstellen" element={<CreateEventView />} />
+                          <Route path="/events/:id" element={<EventDetailView />} />
+                          <Route path="/produkte" element={<ProductListView />} />
+                          <Route path="/produkte/neu" element={<CreateProductView />} />
+                          <Route path="/produkte/:id" element={<ProductDetailView />} />
+                        </Routes>
+                      </main>
+                    </Gate>
+                  }
+                />
+              </Routes>
+            </div>
+          </BrowserRouter>
+        </ProductsProvider>
       </EventsProvider>
     </AuthProvider>
   )

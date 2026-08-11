@@ -17,6 +17,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ticket/, ''),
       },
+      // Same rationale as /api/ticket above. Default port 3003 matches wavy-app's
+      // MARKET_SERVICE_PROXY_TARGET convention for a local MarketService instance.
+      '/api/market': {
+        target: process.env.MARKET_SERVICE_PROXY_TARGET || 'http://localhost:3003',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/market/, ''),
+      },
     },
   },
 })

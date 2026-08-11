@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { OrganizerEvent } from '../types'
 import { useAuth } from '../auth/AuthContext'
+import { isOrganizer } from '../auth/roles'
 import * as eventClient from './eventClient'
 import type { EventInput, EventPatchInput } from './eventClient'
 
@@ -22,13 +23,13 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   // Unlike WavesProvider (public data, loads for every visitor), /me/events is
   // organizer-only — loading it for an anonymous or non-organizer session
   // would just provoke a 401/403.
-  const isOrganizer = status === 'authenticated' && !!user?.roles.includes('organizer')
+  const userIsOrganizer = status === 'authenticated' && isOrganizer(user?.roles)
   const [events, setEvents] = useState<OrganizerEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!accessToken || !isOrganizer) return
+    if (!accessToken || !userIsOrganizer) return
     setLoading(true)
     setError(null)
     try {
@@ -40,7 +41,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [accessToken, isOrganizer])
+  }, [accessToken, userIsOrganizer])
 
   useEffect(() => {
     refresh()

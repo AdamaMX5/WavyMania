@@ -49,3 +49,25 @@ export interface EventStats {
   eventId: string
   tiers: EventTierStats[]
 }
+
+export type ProductState = 'draft' | 'published' | 'soldout' | 'archived'
+
+export interface MarketProduct {
+  id: string
+  merchantId: string
+  waveId: string | null
+  title: string
+  description: string
+  mediaIds: string[]
+  priceCents: number
+  currency: string
+  initialStock: number
+  maxPerUser: number
+  dropAt: string | null
+  state: ProductState
+  requiresShipping: boolean
+  // null while still `draft` (no Redis stock key set until publish).
+  remainingStock: number | null
+  createdAt: string
+  updatedAt: string
+}
