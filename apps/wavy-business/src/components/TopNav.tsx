@@ -39,6 +39,11 @@ export function TopNav() {
             </Link>
           </>
         )}
+        {/* Always shown once past the Gate — both Events- and Produkte-publishing
+            depend on the same Stripe Connect onboarding. */}
+        <Link to="/auszahlungen" className="text-neutral-400 hover:text-neutral-100">
+          Auszahlungen
+        </Link>
         <span className="text-neutral-500">{user?.email}</span>
         <button type="button" onClick={() => logout()} className="text-neutral-400 underline hover:text-neutral-100">
           Abmelden

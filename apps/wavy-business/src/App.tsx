@@ -14,6 +14,8 @@ import { EventDetailView } from './events/EventDetailView'
 import { ProductListView } from './market/ProductListView'
 import { CreateProductView } from './market/CreateProductView'
 import { ProductDetailView } from './market/ProductDetailView'
+import { PayoutsView } from './payments/PayoutsView'
+import { OnboardingRefreshRedirect } from './payments/OnboardingRefreshRedirect'
 
 // "/" defaults to the Events list — but a merchant-only account (no `organizer`
 // role) has no Events nav link and would just land on a permanently-empty list,
@@ -70,6 +72,12 @@ export default function App() {
                           <Route path="/produkte" element={<ProductListView />} />
                           <Route path="/produkte/neu" element={<CreateProductView />} />
                           <Route path="/produkte/:id" element={<ProductDetailView />} />
+                          <Route path="/auszahlungen" element={<PayoutsView />} />
+                          {/* Exact paths PaymentService's onboardingUrls() builds against
+                              APP_BASE_URL — Stripe redirects the merchant back to one of
+                              these after the hosted onboarding flow (see PayoutsView.tsx). */}
+                          <Route path="/merchant/onboarding/complete" element={<Navigate to="/auszahlungen?status=returned" replace />} />
+                          <Route path="/merchant/onboarding/refresh" element={<OnboardingRefreshRedirect />} />
                         </Routes>
                       </main>
                     </Gate>

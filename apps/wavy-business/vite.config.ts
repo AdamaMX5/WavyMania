@@ -24,6 +24,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/market/, ''),
       },
+      // Same rationale as /api/ticket above. No prior proxy target was reserved for
+      // PaymentService elsewhere in the repo — 3005 continues the existing sequence
+      // (3000 Wave, 3001 Geo, 3002 Activation, 3003 Market, 3004 Ticket).
+      '/api/payment': {
+        target: process.env.PAYMENT_SERVICE_PROXY_TARGET || 'http://localhost:3005',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/payment/, ''),
+      },
     },
   },
 })
