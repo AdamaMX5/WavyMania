@@ -1,4 +1,5 @@
 import type { Avatar } from '../types'
+import { fetchWithRefresh } from '../lib/apiRequest'
 
 // Unlike WaveService/GeoService/ActivationService, ObjectService is existing
 // shared platform infrastructure with a stable production domain already
@@ -41,14 +42,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${OBJECT_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  })
+  const res = await fetchWithRefresh(`${OBJECT_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

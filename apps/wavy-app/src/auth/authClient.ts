@@ -1,3 +1,5 @@
+import { getCsrfToken } from './csrf'
+
 // AuthService is existing shared platform infrastructure with a stable production
 // domain already — https://auth.freischule.info is the default, kept overridable
 // via VITE_AUTH_SERVICE_URL (root .env) in case that shared infrastructure ever
@@ -118,4 +120,17 @@ export function resetPassword(
 
 export function logout() {
   return request<{ status: string }>('/user/logout', { method: 'POST' })
+}
+
+// Exchanges the httpOnly refresh_token cookie (14 days) for a fresh access
+// token — the CSRF cookie's value must be echoed back as a header (see
+// csrf.ts) because AuthService checks both hashes together before rotating
+// the cookie pair. A 401 here (cookie missing/expired/already rotated by a
+// concurrent tab) just means there's no session to restore — see
+// tokenStore.ts, which is the only caller.
+export function refresh() {
+  return request<{ access_token: string }>('/user/refresh', {
+    method: 'POST',
+    headers: { 'X-CSRF-Token': getCsrfToken() ?? '' },
+  })
 }

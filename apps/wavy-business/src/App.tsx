@@ -31,6 +31,18 @@ function Home() {
 function Gate({ children }: { children: ReactNode }) {
   const { status, user } = useAuth()
 
+  // Covers the brief silent-refresh bootstrap (see AuthContext.tsx) — shown
+  // instead of the login form so an already-logged-in merchant/organizer
+  // never sees a login flash before their refresh_token cookie resolves into
+  // a fresh session.
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-sm text-neutral-500">
+        Lädt …
+      </div>
+    )
+  }
+
   if (status !== 'authenticated') {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">

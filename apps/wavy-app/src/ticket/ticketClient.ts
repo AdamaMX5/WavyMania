@@ -1,4 +1,5 @@
 import type { Ticket, TicketEvent } from '../types'
+import { fetchWithRefresh } from '../lib/apiRequest'
 
 // TicketService is now deployed under a stable domain, same as WaveService/
 // GeoService/ActivationService/MarketService — hardcoded default,
@@ -22,16 +23,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${TICKET_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-      // Spread last so a caller-supplied `headers` object can never shadow
-      // the auth header — same construction as marketClient.ts's request().
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-  })
+  const res = await fetchWithRefresh(`${TICKET_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

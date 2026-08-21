@@ -1,3 +1,5 @@
+import { fetchWithRefresh } from '../lib/apiRequest'
+
 // GeoService is now deployed under a stable domain, same as WaveService —
 // hardcoded default, overridable via VITE_GEO_SERVICE_URL (root .env). Set
 // that var to /api/geo for local dev against a local GeoService instance,
@@ -19,14 +21,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${GEO_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  })
+  const res = await fetchWithRefresh(`${GEO_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

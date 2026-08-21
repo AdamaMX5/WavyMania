@@ -1,4 +1,5 @@
 import type { Order, Product, ShippingAddress } from '../types'
+import { fetchWithRefresh } from '../lib/apiRequest'
 
 // MarketService is now deployed under a stable domain, same as WaveService/
 // GeoService/ActivationService — hardcoded default, overridable via
@@ -22,17 +23,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${MARKET_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-      // Spread last so a caller-supplied `headers` object can never shadow
-      // the auth header (no current call site does, but this keeps it true
-      // by construction rather than by convention).
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-  })
+  const res = await fetchWithRefresh(`${MARKET_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

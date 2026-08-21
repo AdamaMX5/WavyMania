@@ -53,6 +53,18 @@ export function ProfileView() {
       ? Math.min(100, (reputation.xpIntoLevel / reputation.xpForNextLevel) * 100)
       : 0
 
+  // 'loading' covers the brief silent-refresh bootstrap (see AuthContext.tsx)
+  // — shown instead of either the login form or the authenticated profile so
+  // an already-logged-in user never sees a login-form flash before their
+  // refresh_token cookie resolves into a fresh session.
+  if (auth.status === 'loading') {
+    return (
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4 text-sm text-neutral-500">
+        Lädt …
+      </div>
+    )
+  }
+
   if (auth.status === 'anon') {
     return (
       <div className="flex min-h-[calc(100vh-64px)] items-center p-4">

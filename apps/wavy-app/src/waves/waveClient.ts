@@ -1,4 +1,5 @@
 import type { Wave, WaveCategory } from '../types'
+import { fetchWithRefresh } from '../lib/apiRequest'
 
 // WaveService is now deployed under a stable domain, same as AuthService/
 // ProfileService/ObjectService — hardcoded default, overridable via
@@ -22,14 +23,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${WAVE_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  })
+  const res = await fetchWithRefresh(`${WAVE_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

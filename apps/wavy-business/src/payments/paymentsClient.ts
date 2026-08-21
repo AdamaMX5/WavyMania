@@ -1,3 +1,5 @@
+import { fetchWithRefresh } from '../lib/apiRequest'
+
 // PaymentService is now deployed under a stable domain, same as
 // eventClient.ts/marketClient.ts — hardcoded default, overridable via
 // VITE_PAYMENT_SERVICE_URL (root .env). Set that var to /api/payment for
@@ -20,14 +22,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions): Promise<T> {
-  const res = await fetch(`${PAYMENT_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+  const res = await fetchWithRefresh(`${PAYMENT_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText

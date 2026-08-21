@@ -1,3 +1,5 @@
+import { fetchWithRefresh } from '../lib/apiRequest'
+
 // ActivationService is now deployed under a stable domain, same as
 // WaveService/GeoService — hardcoded default, overridable via
 // VITE_ACTIVATION_SERVICE_URL (root .env). Set that var to /api/activation
@@ -20,14 +22,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(path: string, { accessToken, headers, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${ACTIVATION_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  })
+  const res = await fetchWithRefresh(`${ACTIVATION_BASE_URL}${path}`, { accessToken, headers, ...init })
 
   if (!res.ok) {
     let message = res.statusText
