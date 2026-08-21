@@ -45,11 +45,13 @@ export function useLiveMap(): UseLiveMapResult {
   accessTokenRef.current = accessToken
 
   const fetchHeatmap = useCallback((centerCell: string) => {
-    const token = accessTokenRef.current
-    if (!token) return
+    // GET /map is public (see GeoService.md) — viewing the heatmap never
+    // requires login, only publishing your own position via sendPing below
+    // does. Pass the token along anyway when present; it's simply unused
+    // server-side.
     const ring = gridDisk(centerCell, HEATMAP_RING_K)
     geoClient
-      .getMap(ring, token)
+      .getMap(ring, accessTokenRef.current ?? undefined)
       .then(({ cells: fetchedCells }) => {
         setCells(fetchedCells)
         setError(null)
@@ -121,12 +123,6 @@ export function useLiveMap(): UseLiveMapResult {
     }, HEATMAP_REFRESH_INTERVAL_MS)
     return () => window.clearInterval(id)
   }, [permission, fetchHeatmap])
-
-  // GeoService requires a JWT on both /pings and /map — drop any cached
-  // heatmap immediately on logout instead of leaving stale data on screen.
-  useEffect(() => {
-    if (!accessToken) setCells([])
-  }, [accessToken])
 
   return { permission, error, cells, currentCell, requestLocation }
 }

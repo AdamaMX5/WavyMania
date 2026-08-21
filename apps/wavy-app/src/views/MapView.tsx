@@ -238,17 +238,16 @@ export function MapView() {
 
       {showOptIn && (
         <div className="absolute left-3 right-3 top-3 rounded-xl border border-neutral-800 bg-neutral-950/90 p-3 text-sm text-neutral-200 shadow-lg backdrop-blur">
-          {!accessToken ? (
-            <p>Melde dich an, um die Live-Aktivität in deiner Umgebung zu sehen.</p>
-          ) : permission === 'denied' ? (
+          {permission === 'denied' ? (
             <p>Standortzugriff wurde verweigert. Aktiviere ihn in den Browser-Einstellungen, um die Live-Karte zu sehen.</p>
           ) : permission === 'unsupported' ? (
             <p>Dein Gerät unterstützt keine Standortfreigabe.</p>
           ) : (
             <div className="flex items-center justify-between gap-3">
               <p>
-                Teile deinen Standort, um zu sehen, wo gerade etwas los ist. Wir senden nie deine
-                Koordinaten — nur ein grobes Gebietsraster.
+                {accessToken
+                  ? 'Teile deinen Standort, um zu sehen, wo gerade etwas los ist. Wir senden nie deine Koordinaten — nur ein grobes Gebietsraster.'
+                  : 'Teile deinen Standort, um zu sehen, wo gerade etwas los ist. Wir senden nie deine Koordinaten — nur ein grobes Gebietsraster. Melde dich zusätzlich an, wenn du selbst zur Live-Aktivität beitragen möchtest.'}
               </p>
               <button
                 type="button"

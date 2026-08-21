@@ -67,8 +67,11 @@ export function sendPing(h3: string, accessToken: string) {
   return request<void>('/pings', { method: 'POST', body: JSON.stringify({ h3 }), accessToken })
 }
 
-// `cells` must be pre-deduplicated and capped at 200 entries per GeoService.md.
-export function getMap(cells: string[], accessToken: string) {
+// Public — deliberately no auth (see GeoService.md): Waves/Events must be
+// visible on the Live-Action-Map even for unregistered visitors, and
+// k-anonymity is the actual protection here, not login. `cells` must be
+// pre-deduplicated and capped at 200 entries per GeoService.md.
+export function getMap(cells: string[], accessToken?: string) {
   const query = new URLSearchParams({ cells: cells.join(',') })
   return request<MapResponse>(`/map?${query.toString()}`, { accessToken })
 }
