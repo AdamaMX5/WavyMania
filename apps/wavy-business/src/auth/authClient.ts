@@ -1,4 +1,8 @@
-const AUTH_BASE_URL = 'https://auth.freischule.info'
+// AuthService is existing shared platform infrastructure with a stable production
+// domain already — https://auth.freischule.info is the default, kept overridable
+// via VITE_AUTH_SERVICE_URL (root .env) in case that shared infrastructure ever
+// moves domains, same pattern as the other clients in this app.
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_URL || 'https://auth.freischule.info'
 
 export type CheckEmailStatus = 'login' | 'register'
 

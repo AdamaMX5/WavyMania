@@ -1,1 +1,8 @@
 whitepaper.txt
+
+# Admin-managed shared config for apps/wavy-app + apps/wavy-business
+# (see .env.example, and each app's vite.config.ts `envDir`)
+.env
+.env.*
+!.env.example
+

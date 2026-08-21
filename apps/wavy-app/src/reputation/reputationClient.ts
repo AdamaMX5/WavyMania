@@ -1,9 +1,11 @@
 import type { Reputation } from '../types'
 
 // ProfileService is existing shared platform infrastructure with a stable production
-// domain already (same rationale as authClient.ts/avatarClient.ts) — hardcoded URL, direct
-// cross-origin fetch, no dev proxy needed.
-const PROFILE_BASE_URL = 'https://profile.freischule.info'
+// domain already (same rationale as authClient.ts/avatarClient.ts) — hardcoded default
+// URL, direct cross-origin fetch, no dev proxy needed. Still kept overridable via
+// VITE_PROFILE_SERVICE_URL (root .env) in case that shared infrastructure ever moves
+// domains.
+const PROFILE_BASE_URL = import.meta.env.VITE_PROFILE_SERVICE_URL || 'https://profile.freischule.info'
 
 export class ProfileApiError extends Error {
   status: number

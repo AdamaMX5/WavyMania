@@ -4,10 +4,12 @@ import type { Avatar } from '../types'
 // shared platform infrastructure with a stable production domain already
 // (see ../../.claude/MSArchitecture/ObjectService.md /
 // ../../.claude/MSArchitecture/Architecture.md) — so this follows authClient.ts's
-// pattern (hardcoded URL, direct cross-origin fetch; CORS is handled at the
-// NGINX layer per the shared conventions) rather than the dev-proxy pattern
-// used for the not-yet-stably-deployed Wave/Geo/Activation services.
-const OBJECT_BASE_URL = 'https://object.freischule.info'
+// pattern (hardcoded default URL, direct cross-origin fetch; CORS is handled at
+// the NGINX layer per the shared conventions) rather than the dev-proxy pattern
+// used for the not-yet-stably-deployed Wave/Geo/Activation services. Still kept
+// overridable via VITE_OBJECT_SERVICE_URL (root .env) in case that shared
+// infrastructure ever moves domains.
+const OBJECT_BASE_URL = import.meta.env.VITE_OBJECT_SERVICE_URL || 'https://object.freischule.info'
 
 // One document per user, in a dedicated app-owned collection — avatars are
 // public (isPublic: true) so a user's equipped items are visible to others

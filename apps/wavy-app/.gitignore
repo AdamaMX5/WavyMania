@@ -12,10 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Local env overrides — .env.example stays tracked as the template
-.env
-.env.*
-!.env.example
+# Env config lives at the WavyMania repo root now (see ../../.env.example and
+# vite.config.ts `envDir`), not per-app — nothing app-local to ignore here.
 
 # Editor directories and files
 .vscode/*
