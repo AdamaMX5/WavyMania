@@ -134,3 +134,15 @@ export function refresh() {
     headers: { 'X-CSRF-Token': getCsrfToken() ?? '' },
   })
 }
+
+// AuthService.md doesn't expose this endpoint yet — only /user/verify-email
+// (redeeming the link) exists, nothing that re-triggers sending it. Added
+// ahead of the backend against an agreed-upon name/shape so wiring is a
+// one-line change once it lands; the button in ProfileView.tsx stays
+// disabled and does NOT call this yet.
+export function resendVerificationEmail(accessToken: string) {
+  return request<{ status: string }>('/user/resend-verification-email', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}

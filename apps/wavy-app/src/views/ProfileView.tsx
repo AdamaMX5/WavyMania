@@ -99,7 +99,19 @@ export function ProfileView() {
 
       {auth.verifyEmailPending && (
         <div className="mb-4 rounded-lg border border-amber-800 bg-amber-950/40 p-3 text-sm text-amber-200">
-          Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben.
+          <p>Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben.</p>
+          {/* AuthService.md has no resend endpoint yet (only /user/verify-email,
+              which redeems the link) — authClient.resendVerificationEmail()
+              already targets the agreed-upon /user/resend-verification-email
+              name, but stays unwired here (disabled) until that endpoint
+              actually exists on AuthService. */}
+          <button
+            type="button"
+            disabled
+            className="mt-2 font-medium underline decoration-dotted disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Verifikations-Email erneut schicken (bald verfügbar)
+          </button>
         </div>
       )}
 

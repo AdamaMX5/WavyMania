@@ -18,6 +18,11 @@ const categories: { value: WaveCategory; label: string }[] = [
 // Default Berlin coordinates — used if the browser denies/lacks geolocation.
 const FALLBACK_LOCATION = { lat: 52.52, lng: 13.405 }
 
+// WavyBusiness is a separate app/domain (see ../../CLAUDE.md), not a backend
+// service — hardcoded default, overridable via VITE_WAVY_BUSINESS_URL (root
+// .env) same as the shared-platform service clients.
+const WAVY_BUSINESS_URL = import.meta.env.VITE_WAVY_BUSINESS_URL || 'https://business.freischule.info'
+
 export function CreateView() {
   const { status } = useAuth()
   const { createAndPublishWave } = useWaves()
@@ -32,7 +37,6 @@ export function CreateView() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [maxParticipants, setMaxParticipants] = useState('')
   const [locating, setLocating] = useState(false)
-  const [upsellNote, setUpsellNote] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -100,23 +104,6 @@ export function CreateView() {
   return (
     <div className="p-4">
       <h1 className="mb-4 text-xl font-semibold text-neutral-100">Wave erstellen</h1>
-
-      <div className="mb-4 rounded-xl border border-cyan-800 bg-cyan-950/40 p-3 text-sm text-cyan-200">
-        Für Privatpersonen gedacht — spontan oder mit Termin. Tickets verkaufen, Produkte
-        verknüpfen und den KI-Werbemittel-Generator nutzen geht mit einem Business-Konto.{' '}
-        <button
-          type="button"
-          onClick={() => setUpsellNote(true)}
-          className="font-medium underline"
-        >
-          Mehr erfahren
-        </button>
-        {upsellNote && (
-          <p className="mt-2 text-cyan-300/80">
-            Das WavyBusiness-Onboarding folgt in einer späteren Phase.
-          </p>
-        )}
-      </div>
 
       {formError && (
         <p className="mb-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
@@ -231,6 +218,15 @@ export function CreateView() {
         >
           {submitting ? 'Wird veröffentlicht …' : 'Wave veröffentlichen'}
         </button>
+
+        <a
+          href={WAVY_BUSINESS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="block text-center text-sm text-cyan-400 underline"
+        >
+          Unternehmerkonto erstellen
+        </a>
       </form>
     </div>
   )
