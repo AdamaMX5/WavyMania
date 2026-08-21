@@ -1,11 +1,12 @@
 import type { Wave, WaveCategory } from '../types'
 
-// WaveService isn't deployed under a stable `wave.<wavy-domain>` URL yet (see
-// WaveService.md), so unlike authClient's hardcoded production URL, this one is
-// configurable. In dev it defaults to /api/wave, proxied by Vite to a local
-// WaveService instance (see vite.config.ts) — WaveService itself sends no CORS
-// headers by design (CORS is handled at the NGINX layer in production).
-const WAVE_BASE_URL = import.meta.env.VITE_WAVE_SERVICE_URL || '/api/wave'
+// WaveService is now deployed under a stable domain, same as AuthService/
+// ProfileService/ObjectService — hardcoded default, overridable via
+// VITE_WAVE_SERVICE_URL (root .env). Set that var to /api/wave for local dev
+// against a local WaveService instance, proxied by Vite (see vite.config.ts)
+// — WaveService itself sends no CORS headers by design (CORS is handled at
+// the NGINX layer in production).
+const WAVE_BASE_URL = import.meta.env.VITE_WAVE_SERVICE_URL || 'https://wave.freischule.info'
 
 export class WaveApiError extends Error {
   status: number

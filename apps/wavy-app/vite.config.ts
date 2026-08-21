@@ -22,43 +22,40 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        // WaveService doesn't send CORS headers itself (handled at the NGINX layer
-        // in production, per the shared MSArchitecture conventions) and isn't
-        // deployed under a stable domain yet — proxy it locally so the dev-server
-        // origin matches and the browser never sees a cross-origin request.
-        // Overridden entirely when VITE_WAVE_SERVICE_URL is set (waveClient.ts
-        // then calls that URL directly and this proxy is unused).
+        // All services below now default to their real *.freischule.info domain
+        // directly in client code (waveClient.ts etc.) — these proxy entries are
+        // opt-in local-dev tooling only, used when VITE_WAVE_SERVICE_URL (etc.) is
+        // explicitly set to /api/wave to point at a locally-running instance
+        // instead of production, avoiding a cross-origin request from the
+        // dev-server origin (WaveService itself sends no CORS headers by design;
+        // CORS is handled at the NGINX layer in production).
         '/api/wave': {
           target: env.WAVE_SERVICE_PROXY_TARGET || 'http://localhost:3000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/wave/, ''),
         },
         // Same rationale as /api/wave above, for GeoService (see geoClient.ts).
-        // Overridden entirely when VITE_GEO_SERVICE_URL is set.
         '/api/geo': {
           target: env.GEO_SERVICE_PROXY_TARGET || 'http://localhost:3001',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/geo/, ''),
         },
         // Same rationale as /api/wave above, for ActivationService (see
-        // activationClient.ts). Overridden entirely when
-        // VITE_ACTIVATION_SERVICE_URL is set.
+        // activationClient.ts).
         '/api/activation': {
           target: env.ACTIVATION_SERVICE_PROXY_TARGET || 'http://localhost:3002',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/activation/, ''),
         },
         // Same rationale as /api/wave above, for MarketService (see
-        // marketClient.ts). Overridden entirely when VITE_MARKET_SERVICE_URL is
-        // set.
+        // marketClient.ts).
         '/api/market': {
           target: env.MARKET_SERVICE_PROXY_TARGET || 'http://localhost:3003',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/market/, ''),
         },
         // Same rationale as /api/wave above, for TicketService (see
-        // ticketClient.ts). Overridden entirely when VITE_TICKET_SERVICE_URL is
-        // set.
+        // ticketClient.ts).
         '/api/ticket': {
           target: env.TICKET_SERVICE_PROXY_TARGET || 'http://localhost:3004',
           changeOrigin: true,

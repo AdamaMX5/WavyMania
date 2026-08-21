@@ -1,10 +1,10 @@
-// ActivationService isn't deployed under a stable `activation.<wavy-domain>`
-// URL yet (see ActivationService.md), so like waveClient.ts/geoClient.ts this
-// is configurable. In dev it defaults to /api/activation, proxied by Vite to
-// a local ActivationService instance (see vite.config.ts) — ActivationService
-// itself sends no CORS headers by design (CORS is handled at the NGINX layer
-// in production).
-const ACTIVATION_BASE_URL = import.meta.env.VITE_ACTIVATION_SERVICE_URL || '/api/activation'
+// ActivationService is now deployed under a stable domain, same as
+// WaveService/GeoService — hardcoded default, overridable via
+// VITE_ACTIVATION_SERVICE_URL (root .env). Set that var to /api/activation
+// for local dev against a local ActivationService instance, proxied by Vite
+// (see vite.config.ts) — ActivationService itself sends no CORS headers by
+// design (CORS is handled at the NGINX layer in production).
+const ACTIVATION_BASE_URL = import.meta.env.VITE_ACTIVATION_SERVICE_URL || 'https://activation.freischule.info'
 
 export class ActivationApiError extends Error {
   status: number

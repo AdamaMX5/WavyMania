@@ -1,9 +1,10 @@
-// PaymentService isn't deployed under a stable `payment.<wavy-domain>` URL yet (see
-// PaymentService.md), so like eventClient.ts/marketClient.ts this is configurable. In
-// dev it defaults to /api/payment, proxied by Vite to a local PaymentService instance
-// (see vite.config.ts) — PaymentService itself sends no CORS headers by design (CORS
-// is handled at the NGINX layer in production).
-const PAYMENT_BASE_URL = import.meta.env.VITE_PAYMENT_SERVICE_URL || '/api/payment'
+// PaymentService is now deployed under a stable domain, same as
+// eventClient.ts/marketClient.ts — hardcoded default, overridable via
+// VITE_PAYMENT_SERVICE_URL (root .env). Set that var to /api/payment for
+// local dev against a local PaymentService instance, proxied by Vite (see
+// vite.config.ts) — PaymentService itself sends no CORS headers by design
+// (CORS is handled at the NGINX layer in production).
+const PAYMENT_BASE_URL = import.meta.env.VITE_PAYMENT_SERVICE_URL || 'https://payment.freischule.info'
 
 export class PaymentApiError extends Error {
   status: number

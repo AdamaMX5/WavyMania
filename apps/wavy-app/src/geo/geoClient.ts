@@ -1,9 +1,9 @@
-// GeoService isn't deployed under a stable `geo.<wavy-domain>` URL yet (see
-// GeoService.md), so like waveClient.ts this is configurable. In dev it
-// defaults to /api/geo, proxied by Vite to a local GeoService instance (see
-// vite.config.ts) — GeoService itself sends no CORS headers by design (CORS
-// is handled at the NGINX layer in production).
-const GEO_BASE_URL = import.meta.env.VITE_GEO_SERVICE_URL || '/api/geo'
+// GeoService is now deployed under a stable domain, same as WaveService —
+// hardcoded default, overridable via VITE_GEO_SERVICE_URL (root .env). Set
+// that var to /api/geo for local dev against a local GeoService instance,
+// proxied by Vite (see vite.config.ts) — GeoService itself sends no CORS
+// headers by design (CORS is handled at the NGINX layer in production).
+const GEO_BASE_URL = import.meta.env.VITE_GEO_SERVICE_URL || 'https://geo.freischule.info'
 
 export class GeoApiError extends Error {
   status: number

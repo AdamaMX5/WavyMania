@@ -22,12 +22,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        // TicketService doesn't send CORS headers itself (handled at the NGINX
-        // layer in production, per the shared MSArchitecture conventions) and
-        // isn't deployed under a stable domain yet — proxy it locally so the
-        // dev-server origin matches and the browser never sees a cross-origin
-        // request. Overridden entirely when VITE_TICKET_SERVICE_URL is set
-        // (eventClient.ts then calls that URL directly and this proxy is unused).
+        // All services below now default to their real *.freischule.info domain
+        // directly in client code (eventClient.ts etc.) — these proxy entries are
+        // opt-in local-dev tooling only, used when VITE_TICKET_SERVICE_URL (etc.)
+        // is explicitly set to /api/ticket to point at a locally-running instance
+        // instead of production, avoiding a cross-origin request from the
+        // dev-server origin (TicketService itself sends no CORS headers by
+        // design; CORS is handled at the NGINX layer in production).
         '/api/ticket': {
           target: env.TICKET_SERVICE_PROXY_TARGET || 'http://localhost:3004',
           changeOrigin: true,

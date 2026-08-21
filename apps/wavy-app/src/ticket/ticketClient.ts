@@ -1,12 +1,12 @@
 import type { Ticket, TicketEvent } from '../types'
 
-// TicketService isn't deployed under a stable `ticket.<wavy-domain>` URL yet
-// (see TicketService.md), so like waveClient.ts/geoClient.ts/marketClient.ts
-// this is configurable. In dev it defaults to /api/ticket, proxied by Vite to
-// a local TicketService instance (see vite.config.ts) — TicketService itself
-// sends no CORS headers by design (CORS is handled at the NGINX layer in
-// production).
-const TICKET_BASE_URL = import.meta.env.VITE_TICKET_SERVICE_URL || '/api/ticket'
+// TicketService is now deployed under a stable domain, same as WaveService/
+// GeoService/ActivationService/MarketService — hardcoded default,
+// overridable via VITE_TICKET_SERVICE_URL (root .env). Set that var to
+// /api/ticket for local dev against a local TicketService instance, proxied
+// by Vite (see vite.config.ts) — TicketService itself sends no CORS headers
+// by design (CORS is handled at the NGINX layer in production).
+const TICKET_BASE_URL = import.meta.env.VITE_TICKET_SERVICE_URL || 'https://ticket.freischule.info'
 
 export class TicketApiError extends Error {
   status: number

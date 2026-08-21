@@ -1,11 +1,12 @@
 import type { MarketProduct, ProductState } from '../types'
 
-// MarketService isn't deployed under a stable `market.<wavy-domain>` URL yet (see
-// MarketService.md), so like eventClient.ts this is configurable. In dev it defaults
-// to /api/market, proxied by Vite to a local MarketService instance (see
-// vite.config.ts) — MarketService itself sends no CORS headers by design (CORS is
-// handled at the NGINX layer in production).
-const MARKET_BASE_URL = import.meta.env.VITE_MARKET_SERVICE_URL || '/api/market'
+// MarketService is now deployed under a stable domain, same as
+// eventClient.ts's TicketService — hardcoded default, overridable via
+// VITE_MARKET_SERVICE_URL (root .env). Set that var to /api/market for local
+// dev against a local MarketService instance, proxied by Vite (see
+// vite.config.ts) — MarketService itself sends no CORS headers by design
+// (CORS is handled at the NGINX layer in production).
+const MARKET_BASE_URL = import.meta.env.VITE_MARKET_SERVICE_URL || 'https://market.freischule.info'
 
 export class MarketApiError extends Error {
   status: number
