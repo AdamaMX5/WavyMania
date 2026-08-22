@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TicketEvent, Wave } from '../types'
-import { categoryEmoji } from '../types'
 import { useWaves } from '../waves/WavesContext'
+import { useWaveIcons } from '../waves/WaveIconsContext'
 import { useAuth } from '../auth/AuthContext'
 import { WaveApiError } from '../waves/waveClient'
 import { useTickets } from '../ticket/TicketContext'
@@ -29,6 +29,7 @@ function formatWindow(wave: Wave) {
 
 export function WaveDetailSheet({ wave, onClose }: { wave: Wave; onClose: () => void }) {
   const { joinWave, shareWave } = useWaves()
+  const { iconFor } = useWaveIcons()
   const { status, user } = useAuth()
   const { buyTicket } = useTickets()
   const navigate = useNavigate()
@@ -149,7 +150,7 @@ export function WaveDetailSheet({ wave, onClose }: { wave: Wave; onClose: () => 
               {categoryLabel[wave.category]}
             </span>
             <h2 className="mt-2 text-xl font-semibold text-neutral-100">
-              {categoryEmoji[wave.category]} {wave.title}
+              {iconFor(wave)} {wave.title}
             </h2>
           </div>
           <button onClick={onClose} className="text-neutral-500">

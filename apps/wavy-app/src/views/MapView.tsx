@@ -4,10 +4,10 @@ import type { FeatureCollection, Polygon } from 'geojson'
 import { cellToBoundary } from 'h3-js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useWaves } from '../waves/WavesContext'
+import { useWaveIcons } from '../waves/WaveIconsContext'
 import { useAuth } from '../auth/AuthContext'
 import { useLiveMap } from '../geo/useLiveMap'
 import { WaveDetailSheet } from '../components/WaveDetailSheet'
-import { categoryEmoji } from '../types'
 import type { HeatmapCell } from '../geo/geoClient'
 import { QrScanner } from '../checkin/QrScanner'
 import { parseCheckinQr } from '../checkin/qrPayload'
@@ -98,6 +98,7 @@ interface CheckinFeedback {
 
 export function MapView() {
   const { waves } = useWaves()
+  const { iconFor } = useWaveIcons()
   const { accessToken } = useAuth()
   const { permission, error: geoError, cells, currentCell, requestLocation } = useLiveMap()
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -207,7 +208,7 @@ export function MapView() {
       .filter((wave) => wave.venue.lat !== undefined && wave.venue.lng !== undefined)
       .map((wave) => {
         const el = document.createElement('button')
-        el.textContent = categoryEmoji[wave.category]
+        el.textContent = iconFor(wave)
         el.style.fontSize = '22px'
         el.style.lineHeight = '1'
         el.style.background = 'none'
@@ -228,7 +229,7 @@ export function MapView() {
       })
 
     return () => markers.forEach((m) => m.remove())
-  }, [waves])
+  }, [waves, iconFor])
 
   const showOptIn = permission !== 'granted'
 

@@ -1,8 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Wave } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import { useWaves } from '../waves/WavesContext'
+import { useWaveIcons } from '../waves/WaveIconsContext'
+import { WAVE_ICON_OPTIONS, DEFAULT_ICON_ID_BY_CATEGORY } from '../waves/waveIconCatalog'
 import { getWave, WaveApiError } from '../waves/waveClient'
 import { LoginForm } from '../auth/LoginForm'
 
@@ -19,6 +21,7 @@ export function EditView() {
   const { id } = useParams<{ id: string }>()
   const { status, accessToken, user } = useAuth()
   const { updateWave } = useWaves()
+  const { iconIdFor, setIcon } = useWaveIcons()
   const navigate = useNavigate()
 
   const [wave, setWave] = useState<Wave | null>(null)
@@ -32,6 +35,11 @@ export function EditView() {
   const [venueName, setVenueName] = useState('')
   const [endsAt, setEndsAt] = useState('')
   const [maxParticipants, setMaxParticipants] = useState('')
+  const [icon, setIconChoice] = useState('')
+  // Guards against WaveIconsContext's bulk fetch (still in flight when this view
+  // mounts — see its "Best-effort" comment) overwriting a choice the creator
+  // already made in this session, once it resolves.
+  const iconInitialized = useRef(false)
 
   useEffect(() => {
     if (!id || status !== 'authenticated') return
@@ -45,10 +53,27 @@ export function EditView() {
         setVenueName(w.venue.name)
         setEndsAt(toLocalDatetimeInputValue(w.endsAt))
         setMaxParticipants(w.maxParticipants ? String(w.maxParticipants) : '')
+        // Seed a category-based default right away so the picker never renders
+        // empty — the effect below overwrites it with the actually-stored icon
+        // once/if WaveIconsContext's bulk fetch has resolved by then.
+        setIconChoice(iconIdFor(w.id) ?? DEFAULT_ICON_ID_BY_CATEGORY[w.category])
       })
       .catch((err) => setLoadError(err instanceof WaveApiError ? err.message : 'Wave konnte nicht geladen werden.'))
       .finally(() => setLoading(false))
+    // iconIdFor intentionally excluded — this seed should only run once per
+    // loaded Wave (id/status/accessToken change), not every time the icon map
+    // resolves; see the dedicated sync effect below for that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, status, accessToken])
+
+  useEffect(() => {
+    if (!wave || iconInitialized.current) return
+    const stored = iconIdFor(wave.id)
+    if (stored) {
+      setIconChoice(stored)
+      iconInitialized.current = true
+    }
+  }, [wave, iconIdFor])
 
   if (status !== 'authenticated') {
     return (
@@ -122,6 +147,9 @@ export function EditView() {
           endsAt: new Date(endsAt).toISOString(),
         })
       }
+      // Independent of WaveService's own state — a live Wave's icon can still
+      // change even though its title/venue/etc. are locked (see WaveIconsContext).
+      await setIcon(wave.id, icon)
       navigate('/')
     } catch (err) {
       setSaveError(err instanceof WaveApiError ? err.message : 'Speichern fehlgeschlagen.')
@@ -155,6 +183,30 @@ export function EditView() {
             />
           </div>
         )}
+
+        <div>
+          <label className="mb-1 block text-sm text-neutral-400">Icon</label>
+          <div className="grid grid-cols-8 gap-1.5">
+            {WAVE_ICON_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                title={opt.label}
+                aria-label={opt.label}
+                aria-pressed={icon === opt.id}
+                onClick={() => {
+                  setIconChoice(opt.id)
+                  iconInitialized.current = true
+                }}
+                className={`flex aspect-square items-center justify-center rounded-lg border text-xl ${
+                  icon === opt.id ? 'border-cyan-500 bg-neutral-800' : 'border-neutral-700 bg-neutral-900'
+                }`}
+              >
+                {opt.emoji}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div>
           <label className="mb-1 block text-sm text-neutral-400">Beschreibung</label>

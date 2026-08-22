@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Wave } from '../types'
-import { categoryEmoji } from '../types'
 import { useWaves } from '../waves/WavesContext'
+import { useWaveIcons } from '../waves/WaveIconsContext'
 import { WaveDetailSheet } from '../components/WaveDetailSheet'
 
 const categoryLabel: Record<Wave['category'], string> = {
@@ -15,6 +15,7 @@ const categoryLabel: Record<Wave['category'], string> = {
 
 export function WavesView() {
   const { waves, loading, error } = useWaves()
+  const { iconFor } = useWaveIcons()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = waves.find((w) => w.id === selectedId) ?? null
 
@@ -40,7 +41,7 @@ export function WavesView() {
             className="w-full rounded-xl bg-neutral-900 p-4 text-left transition hover:bg-neutral-800"
           >
             <div className="mb-1 flex items-center gap-2">
-              <span className="text-2xl">{categoryEmoji[wave.category]}</span>
+              <span className="text-2xl">{iconFor(wave)}</span>
               <div className="flex-1">
                 <p className="font-medium text-neutral-100">{wave.title}</p>
                 <p className="text-xs text-neutral-500">{wave.venue.name}</p>

@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { WaveCategory } from '../types'
 import { useWaves } from '../waves/WavesContext'
+import { useWaveIcons } from '../waves/WaveIconsContext'
+import { WAVE_ICON_OPTIONS, DEFAULT_ICON_ID_BY_CATEGORY } from '../waves/waveIconCatalog'
 import { useAuth } from '../auth/AuthContext'
 import { WaveApiError } from '../waves/waveClient'
 import { LoginForm } from '../auth/LoginForm'
@@ -26,16 +28,23 @@ const WAVY_BUSINESS_URL = import.meta.env.VITE_WAVY_BUSINESS_URL || 'https://bus
 export function CreateView() {
   const { status } = useAuth()
   const { createWave } = useWaves()
+  const { setIcon } = useWaveIcons()
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<WaveCategory>('event')
+  const [icon, setIconChoice] = useState(DEFAULT_ICON_ID_BY_CATEGORY.event)
   const [timing, setTiming] = useState<'now' | 'scheduled'>('now')
   const [scheduledAt, setScheduledAt] = useState('')
   const [venueName, setVenueName] = useState('')
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [maxParticipants, setMaxParticipants] = useState('')
+  // Tracks whether the creator has touched the icon picker themselves — until
+  // then, changing the category keeps the icon in sync with it (see categories
+  // select's onChange below), matching the pre-picker behavior where the icon
+  // was purely derived from category.
+  const [iconTouched, setIconTouched] = useState(false)
   const [locating, setLocating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -73,7 +82,7 @@ export function CreateView() {
 
     setSubmitting(true)
     try {
-      await createWave({
+      const wave = await createWave({
         title,
         description,
         category,
@@ -86,6 +95,10 @@ export function CreateView() {
         autoPublish: timing === 'scheduled',
         maxParticipants: maxParticipants ? Number(maxParticipants) : undefined,
       })
+      // Best-effort, same as AvatarContext's equip: the Wave itself is already
+      // saved at this point, so a failed icon write shouldn't block navigation —
+      // it just leaves the Wave on its categoryEmoji fallback (see WaveIconsContext).
+      await setIcon(wave.id, icon).catch(() => {})
       navigate('/')
     } catch (err) {
       setFormError(err instanceof WaveApiError ? err.message : 'Wave konnte nicht erstellt werden.')
@@ -140,7 +153,11 @@ export function CreateView() {
           <label className="mb-1 block text-sm text-neutral-400">Kategorie</label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value as WaveCategory)}
+            onChange={(e) => {
+              const next = e.target.value as WaveCategory
+              setCategory(next)
+              if (!iconTouched) setIconChoice(DEFAULT_ICON_ID_BY_CATEGORY[next])
+            }}
             className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-cyan-500"
           >
             {categories.map((c) => (
@@ -149,6 +166,30 @@ export function CreateView() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-neutral-400">Icon</label>
+          <div className="grid grid-cols-8 gap-1.5">
+            {WAVE_ICON_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                title={opt.label}
+                aria-label={opt.label}
+                aria-pressed={icon === opt.id}
+                onClick={() => {
+                  setIconChoice(opt.id)
+                  setIconTouched(true)
+                }}
+                className={`flex aspect-square items-center justify-center rounded-lg border text-xl ${
+                  icon === opt.id ? 'border-cyan-500 bg-neutral-800' : 'border-neutral-700 bg-neutral-900'
+                }`}
+              >
+                {opt.emoji}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
