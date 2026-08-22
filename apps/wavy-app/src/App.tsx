@@ -5,6 +5,7 @@ import { AvatarProvider } from './avatar/AvatarContext'
 import { MarketProvider } from './market/MarketContext'
 import { TicketProvider } from './ticket/TicketContext'
 import { BottomNav } from './components/BottomNav'
+import { FeedbackWidget } from './feedback/FeedbackWidget'
 import { WavesView } from './views/WavesView'
 import { MapView } from './views/MapView'
 import { CreateView } from './views/CreateView'
@@ -41,6 +42,7 @@ export default function App() {
                     </Routes>
                   </main>
                   <BottomNav />
+                  <FeedbackWidget />
                 </div>
               </BrowserRouter>
             </TicketProvider>
