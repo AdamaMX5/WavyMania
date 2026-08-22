@@ -25,7 +25,7 @@ const WAVY_BUSINESS_URL = import.meta.env.VITE_WAVY_BUSINESS_URL || 'https://bus
 
 export function CreateView() {
   const { status } = useAuth()
-  const { createAndPublishWave } = useWaves()
+  const { createWave } = useWaves()
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
@@ -73,7 +73,7 @@ export function CreateView() {
 
     setSubmitting(true)
     try {
-      await createAndPublishWave({
+      await createWave({
         title,
         description,
         category,
@@ -81,6 +81,9 @@ export function CreateView() {
         venue,
         startsAt,
         endsAt,
+        // See WavesContext.tsx's createWave: only 'scheduled' needs this — 'adhoc' is
+        // published immediately instead, regardless of this flag.
+        autoPublish: timing === 'scheduled',
         maxParticipants: maxParticipants ? Number(maxParticipants) : undefined,
       })
       navigate('/')
@@ -171,13 +174,18 @@ export function CreateView() {
             </button>
           </div>
           {timing === 'scheduled' && (
-            <input
-              type="datetime-local"
-              required
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-cyan-500"
-            />
+            <>
+              <input
+                type="datetime-local"
+                required
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-cyan-500"
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                Die Wave wird erst zum gewählten Zeitpunkt live — bis dahin kannst du sie noch vollständig bearbeiten.
+              </p>
+            </>
           )}
         </div>
 
@@ -216,7 +224,13 @@ export function CreateView() {
           disabled={submitting}
           className="w-full rounded-lg bg-cyan-500 px-3 py-2 font-medium text-neutral-950 disabled:opacity-50"
         >
-          {submitting ? 'Wird veröffentlicht …' : 'Wave veröffentlichen'}
+          {submitting
+            ? timing === 'now'
+              ? 'Wird veröffentlicht …'
+              : 'Wird geplant …'
+            : timing === 'now'
+              ? 'Wave veröffentlichen'
+              : 'Wave planen'}
         </button>
 
         <a

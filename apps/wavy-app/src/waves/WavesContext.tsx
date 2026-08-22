@@ -9,7 +9,7 @@ interface WavesContextValue {
   loading: boolean
   error: string | null
   refresh: () => Promise<void>
-  createAndPublishWave: (input: WaveCreateInput) => Promise<Wave>
+  createWave: (input: WaveCreateInput) => Promise<Wave>
   updateWave: (id: string, input: WavePatchInput) => Promise<Wave>
   joinWave: (id: string) => Promise<void>
   leaveWave: (id: string) => Promise<void>
@@ -55,12 +55,19 @@ export function WavesProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
 
-      createAndPublishWave: async (input) => {
+      createWave: async (input) => {
         const token = requireToken()
-        const draft = await waveClient.createWave(input, token)
-        const published = await waveClient.publishWave(draft.id, token)
-        setWaves((prev) => [published, ...prev])
-        return published
+        const created = await waveClient.createWave(input, token)
+        // Only an 'adhoc' Wave ("Jetzt") should go live the moment it's created — a
+        // 'scheduled' one stays in `draft` (autoPublish carries it to `live` at startsAt
+        // via WaveService's cron, see waveClient.ts's WaveCreateInput) so its creator can
+        // still edit title/venue/capacity up until then (see EditView.tsx's isDraft branch)
+        // instead of it immediately being locked to state=live's restricted PATCH fields.
+        const wave = input.type === 'adhoc' ? await waveClient.publishWave(created.id, token) : created
+        if (wave.state === 'live') {
+          setWaves((prev) => [wave, ...prev])
+        }
+        return wave
       },
 
       updateWave: async (id, input) => {

@@ -54,6 +54,10 @@ export interface WaveCreateInput {
   type: 'adhoc' | 'scheduled'
   startsAt: string
   endsAt: string
+  // Scheduled waves should stay in `draft` until WaveService's cron flips them to `live`
+  // at `startsAt` (see WaveService.md) — set on scheduled creation so a future-dated Wave
+  // isn't published (and thus locked to state=live's restricted PATCH fields) immediately.
+  autoPublish?: boolean
   venue: { name: string; lat?: number; lng?: number }
   maxParticipants?: number
 }
