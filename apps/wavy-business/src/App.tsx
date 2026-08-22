@@ -8,6 +8,7 @@ import { LoginForm } from './auth/LoginForm'
 import { ResetPasswordPage } from './auth/ResetPasswordPage'
 import { NoAccessView } from './components/NoAccessView'
 import { TopNav } from './components/TopNav'
+import { FeedbackWidget } from './feedback/FeedbackWidget'
 import { EventListView } from './events/EventListView'
 import { CreateEventView } from './events/CreateEventView'
 import { EventDetailView } from './events/EventDetailView'
@@ -76,6 +77,7 @@ export default function App() {
                   element={
                     <Gate>
                       <TopNav />
+                      <FeedbackWidget />
                       <main>
                         <Routes>
                           <Route path="/" element={<Home />} />

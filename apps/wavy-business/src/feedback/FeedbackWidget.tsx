@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { LoginForm } from '../auth/LoginForm'
 import { createIssue, GitApiError, type CreateIssueResult } from './gitClient'
 
 type FeedbackType = 'idea' | 'bug'
@@ -10,14 +9,15 @@ const TYPE_META: Record<FeedbackType, { label: string; icon: string; titlePrefix
   bug: { label: 'Bug', icon: '🐛', titlePrefix: '[Bug]', placeholder: 'Was ist passiert? Was hättest du erwartet?' },
 }
 
-// Floating "lightbulb" entry point, mounted once at the app root (see App.tsx) so it's
-// reachable from every screen. Files an idea or a bug report as a GitService issue
-// (see gitClient.ts / GitService.md's POST /issue) — the same repo the dev team already
-// triages through the GitClient poller + `gts` CLI (see GitService.md). Tagged with a
-// `wavy-app` label and a body footer so the dev team can tell it apart from the same
-// widget in wavy-business (mirrors that app's own feedback/FeedbackWidget.tsx).
+// Floating "lightbulb" entry point, mounted once at the app root inside Gate (see App.tsx)
+// so it's reachable from every screen and always has an authenticated user — GitService's
+// POST /issue requires a JWT (see GitService.md), and Gate already blocks unauthenticated/
+// role-less access before any children (including this widget) ever render.
+// Files an idea or a bug report as a GitService issue (see gitClient.ts), tagged with a
+// `wavy-business` label and a body footer so the dev team can tell it apart from the same
+// widget in wavy-app (mirrors that app's own feedback/FeedbackWidget.tsx).
 export function FeedbackWidget() {
-  const { status, accessToken } = useAuth()
+  const { accessToken } = useAuth()
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<FeedbackType>('idea')
   const [title, setTitle] = useState('')
@@ -44,8 +44,8 @@ export function FeedbackWidget() {
       const issue = await createIssue(
         {
           title: `${TYPE_META[type].titlePrefix} ${title.trim()}`,
-          body: `${description.trim()}\n\n— gemeldet aus WavyApp`,
-          labels: [type, 'wavy-app'],
+          body: `${description.trim()}\n\n— gemeldet aus WavyBusiness`,
+          labels: [type, 'wavy-business'],
         },
         accessToken,
       )
@@ -63,17 +63,14 @@ export function FeedbackWidget() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Idee oder Bug melden"
-        // bottom-24 clears BottomNav (sticky, ~64px + safe-area) — same fixed-overlay
-        // convention as WaveDetailSheet/ProductDetailSheet, just anchored bottom-right
-        // instead of covering the viewport.
-        className="fixed bottom-24 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-amber-500/30"
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-amber-500/30"
       >
         💡
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={handleClose}>
-          <div className="w-full rounded-t-2xl bg-neutral-900 p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={handleClose}>
+          <div className="w-full max-w-sm rounded-2xl bg-neutral-900 p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-start justify-between">
               <h2 className="text-xl font-semibold text-neutral-100">💡 Idee oder Bug melden</h2>
               <button onClick={handleClose} className="text-neutral-500">
@@ -81,16 +78,7 @@ export function FeedbackWidget() {
               </button>
             </div>
 
-            {status === 'loading' && <p className="text-sm text-neutral-500">Lädt …</p>}
-
-            {status === 'anon' && (
-              <div>
-                <p className="mb-4 text-sm text-neutral-400">Melde dich an, um Feedback zu senden.</p>
-                <LoginForm />
-              </div>
-            )}
-
-            {status === 'authenticated' && result && (
+            {result ? (
               <div className="space-y-3">
                 <p className="text-sm text-neutral-300">Danke! Issue #{result.number} wurde angelegt.</p>
                 <a href={result.url} target="_blank" rel="noreferrer" className="block text-sm text-cyan-400 underline">
@@ -104,9 +92,7 @@ export function FeedbackWidget() {
                   Schließen
                 </button>
               </div>
-            )}
-
-            {status === 'authenticated' && !result && (
+            ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="flex gap-2">
                   {(Object.keys(TYPE_META) as FeedbackType[]).map((t) => (
